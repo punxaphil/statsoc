@@ -3,7 +3,7 @@ import { Button, Flex, FormControl, FormLabel, Heading, Input, useToast } from '
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, { Suspense, useEffect, useState } from 'react';
 import { colors } from '@/app/const';
-import { deletePlayer, fetchPlayersFromDb, savePlayer } from '@/app/lib/sqlite';
+import { deletePlayer, fetchPlayersFromDb, savePlayer } from '@/app/lib/db';
 import { Player } from '@/app/types';
 import { FaRegTrashCan } from 'react-icons/fa6';
 
@@ -22,7 +22,7 @@ export default function Page() {
     return (
       <Button
         variant={player.name === selectedPlayer ? 'outline' : 'solid'}
-        key={player.id}
+        key={player.name}
         m='2'
         onClick={() => {
           if (deleteMode) {
