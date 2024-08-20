@@ -1,8 +1,8 @@
 'use client';
 import { Box, Button, Center, Flex, Heading, Icon, Text } from '@chakra-ui/react';
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { categories, names } from '@/app/const';
+import { categories } from '@/app/const';
 import { useSearchParams } from 'next/navigation';
 import { fetchPlayerStatistics, savePlayerStatistics } from '@/app/lib/sqlite';
 import { Category, Statistic } from '@/app/types';
@@ -10,37 +10,29 @@ import { FaUsersGear } from 'react-icons/fa6';
 
 export default function Page() {
   let prevCategory = '';
+  const [selectedName, setSelectedName] = useState('');
 
-  const searchParams = useSearchParams();
-  const player = searchParams.get('player');
-  const selectedName = player || names[0];
-  const [stats, setStats] = useState<Statistic[]>([]);
+  function Categories() {
+    const searchParams = useSearchParams();
+    const player = searchParams.get('player');
+    if (player) {
+      setSelectedName(player);
+    }
+    const [stats, setStats] = useState<Statistic[]>([]);
 
-  function loadStats() {
-    fetchPlayerStatistics(selectedName).then(setStats);
-  }
+    useEffect(loadStats, []);
 
-  useEffect(loadStats, []);
+    function loadStats() {
+      fetchPlayerStatistics(selectedName).then(setStats);
+    }
 
-  async function stepStatistic(category: Category, number: number) {
-    await savePlayerStatistics(selectedName, category.name, number);
-    loadStats();
-  }
+    async function stepStatistic(category: Category, number: number) {
+      await savePlayerStatistics(selectedName, category.name, number);
+      loadStats();
+    }
 
-  return (
-    <>
-      <Center>
-        <Heading>
-          <Link href={`/players?player=${selectedName}`}>
-            <Center>
-              StatSoc - {selectedName}
-              <Icon as={FaUsersGear} boxSize='5' m='3' />
-            </Center>
-          </Link>
-        </Heading>
-      </Center>
-
-      <Flex justify='space-evenly' m='3' direction={'column'} gap='1'>
+    return (
+      <>
         {categories.map((category) => {
           const find = stats.find((stat) => stat.description === category.name);
           const number = find ? find.count : 0;
@@ -68,6 +60,27 @@ export default function Page() {
           prevCategory = category.type;
           return element;
         })}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Center>
+        <Heading>
+          <Link href={`/players?player=${selectedName}`}>
+            <Center>
+              StatSoc - {selectedName}
+              <Icon as={FaUsersGear} boxSize='5' m='3' />
+            </Center>
+          </Link>
+        </Heading>
+      </Center>
+
+      <Flex justify='space-evenly' m='3' direction={'column'} gap='1'>
+        <Suspense>
+          <Categories />
+        </Suspense>
       </Flex>
     </>
   );
