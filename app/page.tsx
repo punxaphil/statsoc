@@ -1,95 +1,74 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
+import { Box, Button, Center, Flex, Heading, Icon, Text } from '@chakra-ui/react';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { categories, names } from '@/app/const';
+import { useSearchParams } from 'next/navigation';
+import { fetchPlayerStatistics, savePlayerStatistics } from '@/app/lib/sqlite';
+import { Category, Statistic } from '@/app/types';
+import { FaUsersGear } from 'react-icons/fa6';
 
-export default function Home() {
+export default function Page() {
+  let prevCategory = '';
+
+  const searchParams = useSearchParams();
+  const player = searchParams.get('player');
+  const selectedName = player || names[0];
+  const [stats, setStats] = useState<Statistic[]>([]);
+
+  function loadStats() {
+    fetchPlayerStatistics(selectedName).then(setStats);
+  }
+
+  useEffect(loadStats, []);
+
+  async function stepStatistic(category: Category, number: number) {
+    await savePlayerStatistics(selectedName, category.name, number);
+    loadStats();
+  }
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+    <>
+      <Center>
+        <Heading>
+          <Link href={`/players?player=${selectedName}`}>
+            <Center>
+              StatSoc - {selectedName}
+              <Icon as={FaUsersGear} boxSize='5' m='3' />
+            </Center>
+          </Link>
+        </Heading>
+      </Center>
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+      <Flex justify='space-evenly' m='3' direction={'column'} gap='1'>
+        {categories.map((category) => {
+          const find = stats.find((stat) => stat.description === category.name);
+          const number = find ? find.count : 0;
+          const element = (
+            <Box key={category.name}>
+              {category.type !== prevCategory ? (
+                <Heading size='sm' mt='3' mb='1'>
+                  {category.type}
+                </Heading>
+              ) : (
+                ''
+              )}
+              <Flex align='center' gap='1'>
+                <Text flex='1'>{number}</Text>
+                <Button flex='1' colorScheme='red' onClick={async () => await stepStatistic(category, number - 1)} isDisabled={number === 0}>
+                  -
+                </Button>
+                <Button flex='1' colorScheme='green' onClick={async () => await stepStatistic(category, number + 1)}>
+                  +
+                </Button>
+                <Text flex='12'>{category.name}</Text>
+              </Flex>
+            </Box>
+          );
+          prevCategory = category.type;
+          return element;
+        })}
+      </Flex>
+    </>
   );
 }
